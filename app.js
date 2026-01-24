@@ -206,6 +206,15 @@ class OrderingApp {
             }
         });
 
+        if (item.status === 'accept') {
+            card.classList.add('status-accept');
+            const acceptBtn = card.querySelector('[data-action="accept"]');
+            if (acceptBtn) {
+                acceptBtn.classList.add('active');
+            }
+        }
+
+
         return card;
     }
 
