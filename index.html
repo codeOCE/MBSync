@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MB Sync Ordering Platform</title>
+  <link rel="stylesheet" href="styles.css">
+
+  <!-- PDF.js Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+  <!-- ExcelJS Library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header>
+      <h1>Product Quality</h1>
+    </header>
+
+    <!-- Upload Zone -->
+    <div class="upload-zone" id="uploadZone">
+      <div class="upload-icon">📄</div>
+      <h3>Upload MB Sync PDF Report</h3>
+      <p>Click to browse or drag and drop your PDF file here</p>
+      <input type="file" id="fileInput" accept=".pdf">
+    </div>
+
+    <!-- Loading State -->
+    <div class="loading" id="loading">
+      <div class="spinner"></div>
+      <p>Processing your PDF...</p>
+    </div>
+
+    <!-- Summary Stats -->
+    <div class="summary-stats" id="summaryStats">
+      <div class="stat-card">
+        <div class="stat-value" id="statAccepted">0</div>
+        <div class="stat-label">Accepted</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statIncreased">0</div>
+        <div class="stat-label">Increased</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="statDecreased">0</div>
+        <div class="stat-label">Decreased</div>
+      </div>
+    </div>
+
+    <!-- Items Container -->
+    <div class="items-container" id="itemsContainer">
+      <div class="items-header">
+        <h2>Review Items</h2>
+        <div class="items-count" id="itemsCount">0 items</div>
+      </div>
+
+      <div class="items-grid" id="itemsGrid">
+        <!-- Items will be dynamically inserted here -->
+      </div>
+    </div>
+
+    <!-- Submit Button -->
+    <div class="submit-container" id="submitContainer">
+      <button class="btn-submit" id="submitBtn" disabled>
+        Generate Excel Spreadsheet
+      </button>
+    </div>
+  </div>
+
+  <!-- Load Libraries -->
+  <script src="lib/pdf-parser.js"></script>
+  <script src="lib/template-data.js"></script>
+  <script src="lib/logo-data.js"></script>
+  <script src="lib/excel-gen.js"></script>
+  <script src="app.js"></script>
+</body>
+
+</html>
