@@ -37,8 +37,11 @@ class OrderingApp {
 
     attachEventListeners() {
         // Upload zone click
-        this.uploadZone.addEventListener('click', () => {
-            this.fileInput.click();
+        this.uploadZone.addEventListener('click', (e) => {
+            // Prevent infinite loop/double open if user clicks the input itself
+            if (e.target !== this.fileInput) {
+                this.fileInput.click();
+            }
         });
 
         // File input change
@@ -102,6 +105,9 @@ class OrderingApp {
             alert(error.message || 'Error processing PDF. Please try again.');
             this.hideLoading();
             this.showUploadZone();
+        } finally {
+            // Fix "Double Upload" issue: Allow selecting the same file again
+            this.fileInput.value = '';
         }
     }
 
