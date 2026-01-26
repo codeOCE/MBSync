@@ -43,8 +43,9 @@ class OrderingApp {
 
         // File input change
         this.fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
+            // SAFE CHECK: Ensure files exist and have length
+            if (e.target.files && e.target.files.length > 0) {
+                const file = e.target.files[0];
                 this.handleFileUpload(file);
             }
         });
@@ -63,11 +64,14 @@ class OrderingApp {
             e.preventDefault();
             this.uploadZone.classList.remove('dragover');
 
-            const file = e.dataTransfer.files[0];
-            if (file && file.type === 'application/pdf') {
-                this.handleFileUpload(file);
-            } else {
-                alert('Please upload a PDF file');
+            // SAFE CHECK: Ensure dataTransfer and files exist
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                const file = e.dataTransfer.files[0];
+                if (file.type === 'application/pdf') {
+                    this.handleFileUpload(file);
+                } else {
+                    alert('Please upload a PDF file');
+                }
             }
         });
 
@@ -133,8 +137,12 @@ class OrderingApp {
           <span class="detail-value">${item.proposedQty}</span>
         </div>
         <div class="detail-item">
-          <span class="detail-label">System Stock</span>
+          <span class="detail-label">RSP</span>
           <span class="detail-value">${item.stock}</span>
+        </div>
+        <div class="detail-item">
+          <span class="detail-label">Transit</span>
+          <span class="detail-value">${item.transit}</span>
         </div>
       </div>
 
@@ -259,23 +267,29 @@ class OrderingApp {
         this.statIncreased.textContent = stats.increased;
         this.statDecreased.textContent = stats.decreased;
 
-        // Enable/disable submit button
-        const hasAdjustments = stats.increased > 0 || stats.decreased > 0;
-        this.submitBtn.disabled = !hasAdjustments;
+        // Disable submit button ONLY if no items at all (safety)
+        // User wants to allow submitting "Auto Accept" (no adjustments)
+        this.submitBtn.disabled = this.items.length === 0;
     }
 
     async generateExcel() {
         try {
-            const adjustedItems = this.pdfParser.getAdjustedItems();
+            // Get ALL items (Neutral -> Accept, Inc/Dec)
+            const exportItems = this.pdfParser.getExportItems();
 
-            if (adjustedItems.length === 0) {
-                alert('No items have been adjusted. Please increase or decrease at least one item.');
+            if (exportItems.length === 0) {
+                alert('No items found to generate.');
                 return;
             }
 
-            // Check if all adjusted items have stock values
-            const missingStock = adjustedItems.filter(item =>
-                item.actualStock === null || item.actualStock === undefined
+            // identify items that require detail validation (only changes)
+            const changedItems = exportItems.filter(item =>
+                item.status === 'increase' || item.status === 'decrease'
+            );
+
+            // Check if all changed items have stock values
+            const missingStock = changedItems.filter(item =>
+                item.actualStock === null || item.actualStock === undefined || isNaN(item.actualStock)
             );
 
             if (missingStock.length > 0) {
@@ -283,27 +297,30 @@ class OrderingApp {
                 return;
             }
 
-            this.submitBtn.disabled = true;
-            this.submitBtn.textContent = 'Generating Excel...';
+            // Check if all changed items have a reason selected
+            const missingReason = changedItems.filter(item =>
+                !item.reason || item.reason === ''
+            );
 
-            // Generate Excel
-            const workbook = await this.excelGenerator.generateExcel(adjustedItems);
+            if (missingReason.length > 0) {
+                alert('Please select a "Reason for Change" for all items you want to adjust.');
+                return;
+            }
 
-            // Download
+            // Proceed with generation using ALL items
+            await this.excelGenerator.generateExcel(exportItems);
+
+            // Download happens inside generator or we can trigger it
+            const workbook = await this.excelGenerator.generateExcel(exportItems);
             await this.excelGenerator.downloadExcel(workbook);
-
-            this.submitBtn.textContent = '✓ Excel Downloaded!';
-
-            setTimeout(() => {
-                this.submitBtn.textContent = 'Generate Excel Spreadsheet';
-                this.submitBtn.disabled = false;
-            }, 3000);
 
         } catch (error) {
             console.error('Error generating Excel:', error);
-            alert(error.message || 'Error generating Excel file. Please try again.');
+            alert('Failed to generate Excel file. See console for details.');
+
+            // Re-enable button on error
             this.submitBtn.textContent = 'Generate Excel Spreadsheet';
-            this.submitBtn.disabled = false;
+            this.submitBtn.disabled = this.items.length === 0;
         }
     }
 
