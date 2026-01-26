@@ -1,6 +1,3 @@
-// Main Application Logic
-// MB Sync Ordering Platform
-
 class OrderingApp {
     constructor() {
         this.pdfParser = new PDFParser();
@@ -12,48 +9,38 @@ class OrderingApp {
     }
 
     initializeElements() {
-        // Upload zone
         this.uploadZone = document.getElementById('uploadZone');
         this.fileInput = document.getElementById('fileInput');
 
-        // Loading
         this.loadingEl = document.getElementById('loading');
 
-        // Items container
         this.itemsContainer = document.getElementById('itemsContainer');
         this.itemsGrid = document.getElementById('itemsGrid');
         this.itemsCount = document.getElementById('itemsCount');
 
-        // Summary stats
         this.summaryStats = document.getElementById('summaryStats');
         this.statAccepted = document.getElementById('statAccepted');
         this.statIncreased = document.getElementById('statIncreased');
         this.statDecreased = document.getElementById('statDecreased');
 
-        // Submit
         this.submitContainer = document.getElementById('submitContainer');
         this.submitBtn = document.getElementById('submitBtn');
     }
 
     attachEventListeners() {
-        // Upload zone click
         this.uploadZone.addEventListener('click', (e) => {
-            // Prevent infinite loop/double open if user clicks the input itself
             if (e.target !== this.fileInput) {
                 this.fileInput.click();
             }
         });
 
-        // File input change
         this.fileInput.addEventListener('change', (e) => {
-            // SAFE CHECK: Ensure files exist and have length
             if (e.target.files && e.target.files.length > 0) {
                 const file = e.target.files[0];
                 this.handleFileUpload(file);
             }
         });
 
-        // Drag and drop
         this.uploadZone.addEventListener('dragover', (e) => {
             e.preventDefault();
             this.uploadZone.classList.add('dragover');
@@ -67,7 +54,6 @@ class OrderingApp {
             e.preventDefault();
             this.uploadZone.classList.remove('dragover');
 
-            // SAFE CHECK: Ensure dataTransfer and files exist
             if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
                 const file = e.dataTransfer.files[0];
                 if (file.type === 'application/pdf') {
@@ -78,7 +64,6 @@ class OrderingApp {
             }
         });
 
-        // Submit button
         this.submitBtn.addEventListener('click', () => {
             this.generateExcel();
         });
@@ -86,17 +71,13 @@ class OrderingApp {
 
     async handleFileUpload(file) {
         try {
-            // Show loading
             this.showLoading();
             this.hideUploadZone();
 
-            // Parse PDF
             this.items = await this.pdfParser.parsePDF(file);
 
-            // Hide loading
             this.hideLoading();
 
-            // Display items
             this.displayItems();
             this.updateStats();
 
@@ -106,7 +87,6 @@ class OrderingApp {
             this.hideLoading();
             this.showUploadZone();
         } finally {
-            // Fix "Double Upload" issue: Allow selecting the same file again
             this.fileInput.value = '';
         }
     }
@@ -189,7 +169,6 @@ class OrderingApp {
       </div>
     `;
 
-        // Attach button listeners
         const buttons = card.querySelectorAll('.btn');
         buttons.forEach(btn => {
             btn.addEventListener('click', (e) => {
@@ -198,7 +177,6 @@ class OrderingApp {
             });
         });
 
-        // Attach input listener
         const input = card.querySelector(`#input-${item.wrin}`);
         input.addEventListener('input', (e) => {
             const actualStock = parseFloat(e.target.value) || 0;
@@ -209,12 +187,10 @@ class OrderingApp {
             }
         });
 
-        // Attach reason listener
         const reasonSelect = card.querySelector(`#reason-${item.wrin}`);
         reasonSelect.addEventListener('change', (e) => {
             const reason = e.target.value;
             const currentStatus = item.status;
-            // Update item with reason
             if (currentStatus === 'increase' || currentStatus === 'decrease') {
                 this.pdfParser.updateItemStatus(item.wrin, currentStatus, item.actualStock, reason);
             }
@@ -233,24 +209,19 @@ class OrderingApp {
     }
 
     handleItemAction(wrin, action, card) {
-        // Remove active class from all buttons in this card
         const buttons = card.querySelectorAll('.btn');
         buttons.forEach(btn => btn.classList.remove('active'));
 
-        // Add active class to clicked button
         const clickedBtn = card.querySelector(`[data-action="${action}"]`);
         clickedBtn.classList.add('active');
 
-        // Update card status class
         card.className = 'item-card';
         card.classList.add(`status-${action}`);
 
-        // Show/hide stock input
         const stockInput = card.querySelector('.stock-input-container');
         if (action === 'increase' || action === 'decrease') {
             stockInput.classList.add('active');
 
-            // Get current values
             const input = card.querySelector(`#input-${wrin}`);
             const reasonSelect = card.querySelector(`#reason-${wrin}`);
 
@@ -273,28 +244,19 @@ class OrderingApp {
         this.statIncreased.textContent = stats.increased;
         this.statDecreased.textContent = stats.decreased;
 
-        // Disable submit button ONLY if no items at all (safety)
-        // User wants to allow submitting "Auto Accept" (no adjustments)
         this.submitBtn.disabled = this.items.length === 0;
     }
 
     async generateExcel() {
         try {
-            // Get ALL items (Neutral -> Accept, Inc/Dec)
-            const exportItems = this.pdfParser.getExportItems();
+            const exportItems = this.pdfParser.getAdjustedItems();
 
             if (exportItems.length === 0) {
-                alert('No items found to generate.');
+                alert('No items to export. Please adjust (Increase/Decrease) at least one item.');
                 return;
             }
 
-            // identify items that require detail validation (only changes)
-            const changedItems = exportItems.filter(item =>
-                item.status === 'increase' || item.status === 'decrease'
-            );
-
-            // Check if all changed items have stock values
-            const missingStock = changedItems.filter(item =>
+            const missingStock = exportItems.filter(item =>
                 item.actualStock === null || item.actualStock === undefined || isNaN(item.actualStock)
             );
 
@@ -303,8 +265,7 @@ class OrderingApp {
                 return;
             }
 
-            // Check if all changed items have a reason selected
-            const missingReason = changedItems.filter(item =>
+            const missingReason = exportItems.filter(item =>
                 !item.reason || item.reason === ''
             );
 
@@ -313,10 +274,8 @@ class OrderingApp {
                 return;
             }
 
-            // Proceed with generation using ALL items
             await this.excelGenerator.generateExcel(exportItems);
 
-            // Download happens inside generator or we can trigger it
             const workbook = await this.excelGenerator.generateExcel(exportItems);
             await this.excelGenerator.downloadExcel(workbook);
 
@@ -324,7 +283,6 @@ class OrderingApp {
             console.error('Error generating Excel:', error);
             alert('Failed to generate Excel file. See console for details.');
 
-            // Re-enable button on error
             this.submitBtn.textContent = 'Generate Excel Spreadsheet';
             this.submitBtn.disabled = this.items.length === 0;
         }
@@ -347,11 +305,8 @@ class OrderingApp {
     }
 }
 
-// Initialize app when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-    // Configure PDF.js worker
     pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 
-    // Initialize app
     window.app = new OrderingApp();
 });

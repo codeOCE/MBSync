@@ -1,25 +1,16 @@
-/* Modern Enterprise Theme - "MyRestaurant" Refined */
-
 :root {
-  /* Corporate Identity */
   --header-bg: #4B5563;
-  /* Refined Slate */
   --header-text: #FFFFFF;
   --bg-color: #F3F4F6;
-  /* Soft Cool Gray */
 
-  /* Tile/Card Colors */
   --card-bg: #FFFFFF;
   --card-header-bg: #3B82F6;
-  /* Modern Bright Blue */
   --card-border: #E5E7EB;
 
-  /* Text */
   --text-primary: #1F2937;
   --text-secondary: #4B5563;
   --text-muted: #9CA3AF;
 
-  /* Accents / Status */
   --success: #10B981;
   --warning: #F59E0B;
   --danger: #EF4444;
@@ -40,11 +31,8 @@ body {
   min-height: 100vh;
 }
 
-/* --- Top Header Bar --- */
-/* --- Top Header Bar --- */
 header {
   display: none !important;
-  /* Hidden as per request */
 }
 
 h1 {
@@ -61,19 +49,16 @@ h1 {
   font-weight: 400;
 }
 
-/* --- Main Layout --- */
 .container {
   max-width: 1440px;
   margin: 30px auto;
   padding: 0 24px;
 }
 
-/* --- Upload Box --- */
 .upload-zone {
   background: #FFFFFF;
   border: 2px dashed #D1D5DB;
   border-radius: 12px;
-  /* Rounded */
   padding: 4rem;
   text-align: center;
   margin-bottom: 3rem;
@@ -96,15 +81,12 @@ h1 {
   margin-bottom: 1.5rem;
 }
 
-/* --- Stats Bar --- */
-/* Stats Bar - Hidden as per request */
 .summary-stats {
   display: none !important;
 }
 
 .summary-stats.active {
   display: none !important;
-  /* Force hide */
 }
 
 .stat-card {
@@ -137,7 +119,6 @@ h1 {
   letter-spacing: 0.05em;
 }
 
-/* --- Items Grid --- */
 .items-container {
   display: none;
 }
@@ -163,11 +144,9 @@ h1 {
   gap: 24px;
 }
 
-/* --- The Item Card (Modernized) --- */
 .item-card {
   background: #FFFFFF;
   border-radius: 16px;
-  /* Smooth corners */
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
@@ -181,10 +160,8 @@ h1 {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-/* Card Header */
 .item-header {
   background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
-  /* Blue Gradient */
   color: white;
   padding: 16px 20px;
   min-height: 90px;
@@ -216,13 +193,11 @@ h1 {
   font-size: 0.7rem;
   padding: 4px 8px;
   border-radius: 999px;
-  /* Pill shape */
   margin-top: 8px;
   align-self: flex-start;
   font-weight: 500;
 }
 
-/* Card Body */
 .item-details {
   background-color: #F9FAFB;
   padding: 20px;
@@ -256,7 +231,6 @@ h1 {
   color: var(--text-primary);
 }
 
-/* Card Actions */
 .item-actions {
   padding: 16px;
   background: #FFFFFF;
@@ -286,7 +260,6 @@ h1 {
   color: var(--text-primary);
 }
 
-/* Active Button States */
 .btn-accept.active {
   background-color: #ECFDF5;
   color: #059669;
@@ -305,7 +278,6 @@ h1 {
   border-color: #F59E0B;
 }
 
-/* Status Indication (Ring) */
 .item-card.status-accept {
   box-shadow: 0 0 0 2px var(--success), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
@@ -318,7 +290,6 @@ h1 {
   box-shadow: 0 0 0 2px var(--warning), 0 10px 15px -3px rgba(0, 0, 0, 0.1);
 }
 
-/* Input Area */
 .stock-input-container {
   padding: 16px 20px;
   background: #F9FAFB;
@@ -356,7 +327,6 @@ h1 {
   box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
 }
 
-/* Submit Button */
 .submit-container {
   display: none;
   text-align: center;
@@ -376,7 +346,6 @@ h1 {
   padding: 16px 48px;
   border: none;
   border-radius: 99px;
-  /* Pill shape */
   cursor: pointer;
   box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.3);
   transition: transform 0.2s, box-shadow 0.2s;
@@ -387,7 +356,6 @@ h1 {
   box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.4);
 }
 
-/* Loading Spinner */
 .loading {
   display: none;
   text-align: center;
@@ -418,7 +386,6 @@ h1 {
   }
 }
 
-/* --- Mobile / Responsive Optimization --- */
 @media (max-width: 768px) {
   .container {
     padding: 0 16px;
@@ -428,7 +395,6 @@ h1 {
   header {
     padding: 1.5rem;
     align-items: center;
-    /* Center align header on mobile */
     text-align: center;
   }
 
@@ -444,10 +410,8 @@ h1 {
     font-size: 2.5rem;
   }
 
-  /* Stack Stats */
   .summary-stats {
     grid-template-columns: 1fr;
-    /* Stack vertically */
     gap: 12px;
   }
 
@@ -469,13 +433,11 @@ h1 {
     margin-bottom: 0;
   }
 
-  /* Single Column Items */
   .items-grid {
     grid-template-columns: 1fr;
     gap: 16px;
   }
 
-  /* Card Mobile Adjustments */
   .item-card {
     border-radius: 12px;
   }
@@ -483,7 +445,6 @@ h1 {
   .item-header {
     padding: 12px 16px;
     min-height: auto;
-    /* Allow auto height */
   }
 
   .item-name {
@@ -499,18 +460,15 @@ h1 {
     font-size: 1rem;
   }
 
-  /* Make buttons easier to tap */
   .item-actions {
     padding: 12px;
   }
 
   .btn {
     padding: 12px 8px;
-    /* Larger tap target */
     font-size: 0.9rem;
   }
 
-  /* Fixed Submit Button for Mobile */
   .submit-container {
     position: fixed;
     bottom: 0;
@@ -531,7 +489,6 @@ h1 {
     font-size: 1rem;
   }
 
-  /* Add padding to body to prevent content being hidden behind fixed footer */
   body {
     padding-bottom: 100px;
   }
@@ -539,7 +496,6 @@ h1 {
 
 @media (max-width: 400px) {
 
-  /* Very small screen tweaks */
   .stat-card {
     flex-direction: column;
     text-align: center;
