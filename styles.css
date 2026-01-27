@@ -547,6 +547,81 @@ h1 {
   border-color: #DC2626;
 }
 
+/* Resume Banner */
+.resume-banner {
+  background-color: #EFF6FF;
+  border-left: 4px solid var(--action-blue);
+  padding: 16px;
+  margin-bottom: 24px;
+  border-radius: 8px;
+  position: sticky;
+  top: 10px;
+  z-index: 60;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease-out;
+}
+
+.resume-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.resume-content h3 {
+  margin: 0;
+  font-size: 1rem;
+  color: #1E40AF;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.resume-content p {
+  margin: 0;
+  color: #1E3A8A;
+  font-size: 0.9rem;
+  flex-grow: 1;
+}
+
+.resume-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-resume {
+  background: var(--action-blue);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-resume:hover {
+  background: #1D4ED8;
+}
+
+.btn-discard {
+  background: white;
+  border: 1px solid #BFDBFE;
+  color: #2563EB;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-discard:hover {
+  background: #EFF6FF;
+}
+
 .no-results {
   text-align: center;
   padding: 40px;

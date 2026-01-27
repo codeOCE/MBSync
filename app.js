@@ -40,6 +40,15 @@ class OrderingApp {
         this.filterTabs = document.getElementById('filterTabs');
         this.validationBanner = document.getElementById('validationBanner');
         this.exitValidationBtn = document.getElementById('exitValidationBtn');
+
+        // Resume Banner
+        this.resumeBanner = document.getElementById('resumeBanner');
+        this.resumeTimeEl = document.getElementById('resumeTime');
+        this.btnResume = document.getElementById('btnResume');
+        this.btnDiscard = document.getElementById('btnDiscard');
+
+        // Check for saved session on load
+        this.checkForSavedSession();
     }
 
     attachEventListeners() {
@@ -112,6 +121,16 @@ class OrderingApp {
         this.exitValidationBtn.addEventListener('click', () => {
             this.toggleValidationMode(false);
         });
+
+        // Resume Session Listeners
+        this.btnResume.addEventListener('click', () => {
+            this.loadState();
+        });
+
+        this.btnDiscard.addEventListener('click', () => {
+            this.clearState();
+            this.resumeBanner.style.display = 'none';
+        });
     }
 
     setFilter(filterType) {
@@ -157,13 +176,30 @@ class OrderingApp {
     }
 
     async handleFileUpload(file) {
+        // Check if there's an active session
+        if (this.items.length > 0) {
+            if (!confirm('Uploading a new file will clear your current session. Do you want to proceed?')) {
+                this.fileInput.value = '';
+                return;
+            }
+        }
+
         try {
             this.showLoading();
             this.hideUploadZone();
+            this.resumeBanner.style.display = 'none'; // Hide resume banner if valid upload starts
 
-            this.items = await this.pdfParser.parsePDF(file);
+            const newItems = await this.pdfParser.parsePDF(file);
+
+            // Clear any old state first
+            this.clearState();
+
+            // Set and save new items
+            this.items = newItems;
+            this.saveState();
 
             this.hideLoading();
+            this.hideUploadZone(); // Ensure upload zone is hidden after clearState showed it
 
             this.displayItems();
             this.updateStats();
@@ -172,7 +208,10 @@ class OrderingApp {
             console.error('Error processing file:', error);
             alert(error.message || 'Error processing PDF. Please try again.');
             this.hideLoading();
-            this.showUploadZone();
+
+            if (this.items.length === 0) {
+                this.showUploadZone();
+            }
         } finally {
             this.fileInput.value = '';
         }
@@ -206,6 +245,8 @@ class OrderingApp {
         const card = document.createElement('div');
         card.className = 'item-card';
         card.dataset.wrin = item.wrin;
+
+        const stockValue = (item.actualStock !== null && item.actualStock !== undefined) ? item.actualStock : '';
 
         card.innerHTML = `
       <div class="item-header">
@@ -250,17 +291,18 @@ class OrderingApp {
               placeholder="Enter stock"
               min="0"
               step="0.01"
+              value="${stockValue}"
             />
         </div>
         <div class="input-group">
             <label for="reason-${item.wrin}">Reason for Change:</label>
             <select id="reason-${item.wrin}" class="reason-select">
-                <option value="" disabled selected>Select a reason...</option>
-                <option value="Stock On Hand Variance">Stock On Hand Variance</option>
-                <option value="Manual Items">Manual Items</option>
-                <option value="Safety Stock">Safety Stock</option>
-                <option value="Shelf Life">Shelf Life</option>
-                <option value="Usage">Usage</option>
+                <option value="" disabled ${!item.reason ? 'selected' : ''}>Select a reason...</option>
+                <option value="Stock On Hand Variance" ${item.reason === 'Stock On Hand Variance' ? 'selected' : ''}>Stock On Hand Variance</option>
+                <option value="Manual Items" ${item.reason === 'Manual Items' ? 'selected' : ''}>Manual Items</option>
+                <option value="Safety Stock" ${item.reason === 'Safety Stock' ? 'selected' : ''}>Safety Stock</option>
+                <option value="Shelf Life" ${item.reason === 'Shelf Life' ? 'selected' : ''}>Shelf Life</option>
+                <option value="Usage" ${item.reason === 'Usage' ? 'selected' : ''}>Usage</option>
             </select>
         </div>
       </div>
@@ -276,31 +318,43 @@ class OrderingApp {
 
         const input = card.querySelector(`#input-${item.wrin}`);
         input.addEventListener('input', (e) => {
-            const actualStock = parseFloat(e.target.value) || 0;
-            const currentStatus = item.status;
-            if (currentStatus === 'increase' || currentStatus === 'decrease') {
-                this.pdfParser.updateItemStatus(item.wrin, currentStatus, actualStock, item.reason);
-                this.updateStats();
+            const val = e.target.value;
+            const actualStock = val === '' ? null : parseFloat(val);
+
+            // FIND REAL ITEM IN SOURCE OF TRUTH
+            const realItem = this.items.find(i => i.wrin === item.wrin);
+            if (realItem) {
+                console.log('Auto-saving stock:', realItem.wrin, actualStock);
+                this.pdfParser.updateItemStatus(realItem.wrin, realItem.status, actualStock, realItem.reason);
+                this.saveState();
             }
         });
 
         const reasonSelect = card.querySelector(`#reason-${item.wrin}`);
         reasonSelect.addEventListener('change', (e) => {
             const reason = e.target.value;
-            const currentStatus = item.status;
-            if (currentStatus === 'increase' || currentStatus === 'decrease') {
-                this.pdfParser.updateItemStatus(item.wrin, currentStatus, item.actualStock, reason);
+
+            // FIND REAL ITEM IN SOURCE OF TRUTH
+            const realItem = this.items.find(i => i.wrin === item.wrin);
+            if (realItem) {
+                console.log('Auto-saving reason:', realItem.wrin, reason);
+                this.pdfParser.updateItemStatus(realItem.wrin, realItem.status, realItem.actualStock, reason);
+                this.saveState();
             }
         });
 
         if (item.status === 'accept') {
             card.classList.add('status-accept');
             const acceptBtn = card.querySelector('[data-action="accept"]');
-            if (acceptBtn) {
-                acceptBtn.classList.add('active');
-            }
-        }
+            if (acceptBtn) acceptBtn.classList.add('active');
+        } else if (item.status === 'increase' || item.status === 'decrease') {
+            card.classList.add(`status-${item.status}`);
+            const actionBtn = card.querySelector(`[data-action="${item.status}"]`);
+            if (actionBtn) actionBtn.classList.add('active');
 
+            const stockInput = card.querySelector('.stock-input-container');
+            if (stockInput) stockInput.classList.add('active');
+        }
 
         return card;
     }
@@ -332,6 +386,7 @@ class OrderingApp {
         }
 
         this.updateStats();
+        this.saveState();
     }
 
     updateStats() {
@@ -408,6 +463,69 @@ class OrderingApp {
 
     hideUploadZone() {
         this.uploadZone.style.display = 'none';
+    }
+
+    // --- Auto-Save Logic ---
+
+    checkForSavedSession() {
+        const savedData = localStorage.getItem('mbSync_data');
+        if (savedData) {
+            try {
+                const parsed = JSON.parse(savedData);
+                const date = new Date(parsed.timestamp);
+                this.resumeTimeEl.textContent = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' ' + date.toLocaleDateString();
+                this.resumeBanner.style.display = 'block';
+            } catch (e) {
+                console.error('Error reading saved session', e);
+                this.clearState();
+            }
+        }
+    }
+
+    saveState() {
+        if (this.items.length === 0) return;
+
+        const data = {
+            timestamp: Date.now(),
+            items: this.items,
+            state: this.state
+        };
+        localStorage.setItem('mbSync_data', JSON.stringify(data));
+    }
+
+    loadState() {
+        try {
+            const savedData = localStorage.getItem('mbSync_data');
+            if (!savedData) return;
+
+            const parsed = JSON.parse(savedData);
+            this.items = parsed.items;
+            this.state = parsed.state || this.state;
+
+            this.resumeBanner.style.display = 'none';
+            this.hideUploadZone();
+            this.displayItems();
+            this.updateStats();
+
+            // Restore PDF Parser items reference since it's used for stats calculation
+            this.pdfParser.items = this.items;
+
+        } catch (e) {
+            console.error('Error loading state:', e);
+            alert('Failed to load saved session.');
+            this.clearState();
+        }
+    }
+
+    clearState() {
+        localStorage.removeItem('mbSync_data');
+        this.items = [];
+        this.pdfParser.items = [];
+        this.showUploadZone();
+        this.itemsContainer.classList.remove('active');
+        this.summaryStats.classList.remove('active');
+        this.submitContainer.classList.remove('active');
+        this.controlsContainer.style.display = 'none';
     }
 }
 
