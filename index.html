@@ -57,6 +57,30 @@
       </div>
     </div>
 
+    <!-- Controls: Search & Filters -->
+    <div class="controls-container" id="controlsContainer" style="display: none;">
+      <div class="search-bar">
+        <input type="text" id="searchInput" placeholder="Search items or WRIN...">
+        <button id="clearSearch" class="btn-clear" style="display: none;">✕</button>
+      </div>
+      <div class="filter-tabs" id="filterTabs">
+        <button class="tab active" data-filter="ALL">All</button>
+        <button class="tab" data-filter="Dry">Dry</button>
+        <button class="tab" data-filter="Refrigerated">Fridge</button>
+        <button class="tab" data-filter="Frozen">Freezer</button>
+        <button class="tab" data-filter="Manual Items">Manual</button>
+      </div>
+    </div>
+
+    <!-- Validation Banner (Hidden by default) -->
+    <div class="validation-banner" id="validationBanner" style="display: none;">
+      <div class="validation-content">
+        <h3>⚠️ Action Required</h3>
+        <p>Please fix the highlighted items below.</p>
+        <button class="btn-exit-validation" id="exitValidationBtn">Show All Items</button>
+      </div>
+    </div>
+
     <!-- Items Container -->
     <div class="items-container" id="itemsContainer">
       <div class="items-header">
