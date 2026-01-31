@@ -196,6 +196,7 @@ class OrderingApp {
 
             // Set and save new items
             this.items = newItems;
+            this.pdfParser.items = newItems; // FIX: Sync parser items after clearState wiped them
             this.saveState();
 
             this.hideLoading();
