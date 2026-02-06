@@ -1,0 +1,135 @@
+
+// Reproduction of parsing logic from lib/pdf-parser.js
+const fs = require('fs');
+
+function parseTextLines(lines) {
+    const items = [];
+    const storageKeywords = ['Refrigerated', 'Frozen', 'Dry', 'ManualItems'];
+
+    for (const line of lines) {
+        try {
+            if (/store\s*#|page\s*\d|report|user:|date:|time:|^processed/i.test(line)) continue;
+            if (/^WRIN\s+Description/i.test(line)) continue;
+
+            const tokens = line.trim().split(/\s+/);
+            if (tokens.length < 3) continue;
+
+            const wrinMatch = tokens[0].match(/^(\d{4,8})$/);
+            if (!wrinMatch) continue;
+            const wrin = wrinMatch[1];
+
+            let storageType = 'Unknown';
+            let endIndex = tokens.length - 1;
+            const lastToken = tokens[endIndex];
+
+            const cleanLastToken = lastToken.replace(/[-,–]/g, '');
+            const isNumber = /^[\d]+(\.\d+)?$/.test(cleanLastToken) || lastToken === '-' || lastToken === '–';
+
+            if (!isNumber && lastToken.length > 1) {
+                storageType = lastToken;
+                const matchedKey = storageKeywords.find(k => lastToken.toLowerCase().includes(k.toLowerCase()));
+                if (matchedKey) {
+                    storageType = matchedKey === 'ManualItems' ? 'Manual Items' : matchedKey;
+                }
+
+                endIndex--;
+            }
+
+            let dataTokens = [];
+            let dataStartIndex = endIndex + 1;
+
+            let columnsFound = 0;
+
+            for (let i = endIndex; i > 0; i--) {
+                const t = tokens[i];
+                // Sanitize
+                const cleanT = t.replace(/[^\d\.]/g, '');
+
+                const isDash = /^[-\u2013\u2014\u2212]+$/.test(t);
+
+                // CRITICAL FIX 1: Checks for letters
+                const hasLetters = /[a-zA-Z]/.test(t);
+
+                if (((/^[\d]+(\.\d+)?$/.test(cleanT) && cleanT.length > 0) || isDash) && !hasLetters) {
+                    if (columnsFound < 7) {
+                        dataTokens.unshift(cleanT);
+                        columnsFound++;
+                        dataStartIndex = i;
+                    } else {
+                        break;
+                    }
+                } else {
+                    if (columnsFound === 0) {
+                        // Keep going if we haven't found data yet
+                        // This logic seems slightly flawed? If we hit a non-number before finding any numbers, we just continue?
+                        // Ah, it loops from RIGHT to LEFT.
+                        // So if we encounter non-numbers (like name words) BEFORE finding any data, we should probably stop?
+                        // But the logic says: if columnsFound === 0, keep going.
+                        // This means if we have "WRIN Name Name Name 10 20", identifying "20" (rightmost) first.
+                    } else {
+                        break;
+                    }
+                }
+            }
+
+            const nameTokens = tokens.slice(1, dataStartIndex);
+            let name = nameTokens.join(' ');
+
+            let proposedQty = 0;
+            let rsp = 0;
+            let transit = 0;
+
+            let numericTokens = dataTokens.map(t => {
+                if (/^[-\u2013\u2014\u2212]+$/.test(t)) return 0;
+                // Fix: Remove commas before parsing to handle "1,000" correctly
+                const cleanNum = t.replace(/,/g, '');
+                return parseFloat(cleanNum) || 0;
+            });
+
+            // CRITICAL FIX 2: Proposed Qty check
+            if (numericTokens.length > 0 && numericTokens[0] % 1 !== 0) {
+                // console.log(`[DEBUG] Dropping decimal token: ${numericTokens[0]} from line: ${line}`);
+                numericTokens.shift();
+            }
+
+            const cnt = numericTokens.length;
+
+            if (cnt >= 1) {
+                proposedQty = numericTokens[0];
+                if (cnt > 2) rsp = numericTokens[2];
+                if (cnt > 3) transit = numericTokens[3];
+            }
+
+            items.push({
+                wrin,
+                name: name,
+                proposedQty,
+                stock: rsp,
+                transit,
+                storageType,
+                rawLine: line
+            });
+
+        } catch (e) {
+            console.error("Error parsing line:", line, e);
+        }
+    }
+    return items;
+}
+
+// TEST CASES
+const testLines = [
+    "00012345 TEST ITEM 1 10 20 30 40 50 Dry", // Standard
+    "00012345 TEST ITEM 2 WITH NUMS 1.5 L 10 20 30 40 50 Dry", // Name with decimal
+    "00012345 TEST ITEM 3 - 20 30 - 50 Dry", // Dashes
+    "00012345 TEST ITEM 4 1,000 2,000 3,000 Dry", // Commas (Possible Failure Point)
+    "00012345 TEST ITEM 5 10 20 Dry", // Missing columns
+    "00012345 TEST ITEM 6 23.5 10 20 30 Dry", // First number is decimal 
+    "NOT A WRIN 12345",
+    "Report Generated by...",
+    "12345678 Pure Leaf Raspberry 11.5 5.00 - 6.00 48.24 1.00 Dry",
+    "325113 clam mcspicy 22 1 1 0.49 0 0.23 1.19 0.2 Dry"
+];
+
+const results = parseTextLines(testLines);
+console.log(JSON.stringify(results.filter(i => i.wrin === '325113'), null, 2));
